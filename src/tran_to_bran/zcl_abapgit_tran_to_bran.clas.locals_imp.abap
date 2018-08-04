@@ -8,6 +8,11 @@ CLASS lcl_transports DEFINITION.
     TYPES: ty_list_tt TYPE STANDARD TABLE OF trkorr WITH DEFAULT KEY.
 
     CLASS-METHODS:
+      read_description
+        IMPORTING
+          iv_trkorr             TYPE trkorr
+        RETURNING
+          VALUE(rv_description) TYPE string,
       list_contents
         IMPORTING iv_trkorr      TYPE trkorr
         RETURNING VALUE(rt_list) TYPE e071_t,
@@ -20,6 +25,15 @@ CLASS lcl_transports DEFINITION.
 ENDCLASS.
 
 CLASS lcl_transports IMPLEMENTATION.
+
+  METHOD read_description.
+
+    SELECT SINGLE as4text FROM e07t
+      INTO rv_description
+      WHERE trkorr = iv_trkorr AND langu = sy-langu.
+    ASSERT sy-subrc = 0.
+
+  ENDMETHOD.
 
   METHOD list_contents.
 
@@ -77,10 +91,16 @@ CLASS lcl_objects IMPLEMENTATION.
       IF ls_list-pgmid = 'R3TR'.
         APPEND ls_list TO rt_list.
       ELSE.
-* todo, and make sure to remove duplicates
-        BREAK-POINT.
+        DATA(ls_tadir) = cl_wb_object_type=>get_tadir_from_limu(
+          p_object   = ls_list-object
+          p_obj_name = ls_list-obj_name ).
+
+        APPEND CORRESPONDING #( ls_tadir ) TO rt_list.
       ENDIF.
     ENDLOOP.
+
+    SORT rt_list BY pgmid object obj_name.
+    DELETE ADJACENT DUPLICATES FROM rt_list COMPARING pgmid object obj_name.
 
   ENDMETHOD.
 
