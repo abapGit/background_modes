@@ -215,6 +215,8 @@ CLASS ZCL_ABAPGIT_TRAN_TO_BRAN IMPLEMENTATION.
 * todo, handle deletions
 * todo, TABU, table contents?
 * todo, LIMU object in multiple transports?
+* todo, Moving objects
+* todo, Objects outside of repo
 
     ENDLOOP.
 
