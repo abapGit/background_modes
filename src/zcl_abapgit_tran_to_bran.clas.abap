@@ -25,7 +25,9 @@ CLASS zcl_abapgit_tran_to_bran DEFINITION
         !iv_main           TYPE devclass
         !it_objects        TYPE e071_t
       RETURNING
-        VALUE(rv_relevant) TYPE abap_bool .
+        VALUE(rv_relevant) TYPE abap_bool
+      RAISING
+        zcx_abapgit_exception .
     METHODS determine_user_details
       IMPORTING
         !iv_changed_by TYPE xubname
@@ -86,24 +88,15 @@ CLASS ZCL_ABAPGIT_TRAN_TO_BRAN IMPLEMENTATION.
       RETURN.
     ENDIF.
 
-    DATA(lt_tadir) = VALUE tt_tadir( FOR ls_object IN it_objects (
-      pgmid = ls_object-pgmid
-      object = ls_object-object
-      obj_name = ls_object-obj_name ) ).
-
-    SELECT DISTINCT devclass
-      FROM tadir INTO TABLE @DATA(lt_packages)
-      FOR ALL ENTRIES IN @lt_tadir
-      WHERE pgmid = @lt_tadir-pgmid
-      AND object = @lt_tadir-object
-      AND obj_name = @lt_tadir-obj_name.
-
     DATA(lt_sub) = zcl_abapgit_factory=>get_sap_package( iv_main )->list_subpackages( ).
     APPEND iv_main TO lt_sub.
 
-    LOOP AT lt_packages INTO DATA(lv_package).
-      rv_relevant = boolc( line_exists( lt_sub[ table_line = lv_package ] ) ).
-      IF rv_relevant = abap_true.
+    LOOP AT it_objects INTO DATA(ls_object).
+      DATA(ls_tadir) = zcl_abapgit_factory=>get_tadir( )->read_single(
+        iv_object   = ls_object-object
+        iv_obj_name = CONV #( ls_object-obj_name ) ).
+      IF line_exists( lt_sub[ table_line = ls_tadir-devclass ] ).
+        rv_relevant = abap_true.
         RETURN.
       ENDIF.
     ENDLOOP.
