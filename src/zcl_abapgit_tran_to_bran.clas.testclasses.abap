@@ -183,3 +183,36 @@ CLASS ltcl_is_relevant IMPLEMENTATION.
   ENDMETHOD.
 
 ENDCLASS.
+
+CLASS ltcl_build_stage DEFINITION DEFERRED.
+CLASS zcl_abapgit_tran_to_bran DEFINITION LOCAL FRIENDS ltcl_build_stage.
+
+CLASS ltcl_build_stage DEFINITION FOR TESTING
+  DURATION SHORT
+  RISK LEVEL HARMLESS FINAL.
+
+  PRIVATE SECTION.
+    DATA:
+      mo_cut TYPE REF TO zcl_abapgit_tran_to_bran.
+
+    METHODS:
+      setup,
+      test01 FOR TESTING RAISING zcx_abapgit_exception.
+
+ENDCLASS.
+
+CLASS ltcl_build_stage IMPLEMENTATION.
+
+  METHOD setup.
+    mo_cut = NEW #( ).
+  ENDMETHOD.
+
+  METHOD test01.
+
+    DATA(lt_result) = mo_cut->build_stage( 'ABC123' ).
+
+* todo
+
+  ENDMETHOD.
+
+ENDCLASS.
