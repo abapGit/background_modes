@@ -126,7 +126,7 @@ CLASS ZCL_ABAPGIT_TRAN_TO_BRAN IMPLEMENTATION.
     create_or_set_branch( |refs/heads/{ iv_trkorr }| ).
 
     DATA(ls_files) = zcl_abapgit_stage_logic=>get( mo_repo ).
-    DATA(lt_objects) = lcl_objects=>to_r3tr( lcl_transports=>list_contents( iv_trkorr ) ).
+    DATA(lt_objects) = zcl_bg_factory=>get_objects( )->to_r3tr( zcl_bg_factory=>get_transports( )->list_contents( iv_trkorr ) ).
 
     LOOP AT ls_files-local ASSIGNING FIELD-SYMBOL(<ls_local>) WHERE NOT item-obj_type IS INITIAL.
       IF NOT line_exists( lt_objects[ object = <ls_local>-item-obj_type obj_name = <ls_local>-item-obj_name ] ).
@@ -145,7 +145,7 @@ CLASS ZCL_ABAPGIT_TRAN_TO_BRAN IMPLEMENTATION.
     LOOP AT lt_users INTO DATA(lv_changed_by).
       DATA(ls_comment) = VALUE zif_abapgit_definitions=>ty_comment(
         committer = determine_user_details( lv_changed_by )
-        comment   = lcl_transports=>read_description( iv_trkorr ) ).
+        comment   = zcl_bg_factory=>get_transports( )->read_description( iv_trkorr ) ).
 
       DATA(lo_stage) = NEW zcl_abapgit_stage(
         iv_branch_name = mo_repo->get_branch_name( )
@@ -196,9 +196,9 @@ CLASS ZCL_ABAPGIT_TRAN_TO_BRAN IMPLEMENTATION.
     mo_log = io_log.
     mo_repo = io_repo.
 
-    LOOP AT lcl_transports=>list_open( ) INTO DATA(lv_trkorr).
+    LOOP AT zcl_bg_factory=>get_transports( )->list_open( ) INTO DATA(lv_trkorr).
 
-      DATA(lt_objects) = lcl_objects=>to_r3tr( lcl_transports=>list_contents( lv_trkorr ) ).
+      DATA(lt_objects) = zcl_bg_factory=>get_objects( )->to_r3tr( zcl_bg_factory=>get_transports( )->list_contents( lv_trkorr ) ).
 
       IF is_relevant( iv_main    = io_repo->get_package( )
                       it_objects = lt_objects ) = abap_false.
