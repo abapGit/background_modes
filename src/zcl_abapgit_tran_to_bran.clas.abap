@@ -123,10 +123,10 @@ CLASS ZCL_ABAPGIT_TRAN_TO_BRAN IMPLEMENTATION.
     DATA(lt_branches) = zcl_abapgit_factory=>get_branch_overview( mo_repo )->get_branches( ).
 
     IF NOT line_exists( lt_branches[ name = iv_name ] ).
-      zcl_abapgit_git_porcelain=>create_branch(
-        io_repo = mo_repo
+      mo_repo->create_branch(
         iv_name = iv_name
         iv_from = lt_branches[ is_head = abap_true ]-sha1 ).
+
       mo_log->add_info( |Branch { iv_name } created| ).
     ENDIF.
 
