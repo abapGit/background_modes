@@ -55,7 +55,7 @@ ENDCLASS.
 
 
 
-CLASS ZCL_ABAPGIT_TRAN_TO_BRAN IMPLEMENTATION.
+CLASS zcl_abapgit_tran_to_bran IMPLEMENTATION.
 
 
   METHOD build_stage.
@@ -185,6 +185,7 @@ CLASS ZCL_ABAPGIT_TRAN_TO_BRAN IMPLEMENTATION.
 
   METHOD push.
 
+    DATA(lv_base_branch) = mo_repo->get_branch_name( ).
     create_or_set_branch( |refs/heads/{ iv_trkorr }| ).
 
     DATA(lt_stage) = build_stage( iv_trkorr ).
@@ -197,6 +198,8 @@ CLASS ZCL_ABAPGIT_TRAN_TO_BRAN IMPLEMENTATION.
       mo_repo->push( is_comment = ls_stage-comment
                      io_stage   = ls_stage-stage ).
     ENDLOOP.
+
+    mo_repo->set_branch_name( lv_base_branch ).
 
   ENDMETHOD.
 
