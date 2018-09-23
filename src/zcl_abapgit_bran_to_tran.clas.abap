@@ -31,7 +31,7 @@ CLASS ZCL_ABAPGIT_BRAN_TO_TRAN IMPLEMENTATION.
   METHOD zif_abapgit_background~run.
 
 * todo
-    BREAK-POINT.
+*    BREAK-POINT.
 
   ENDMETHOD.
 ENDCLASS.
