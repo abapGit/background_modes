@@ -90,9 +90,7 @@ CLASS ZCL_ABAPGIT_TRAN_TO_BRAN IMPLEMENTATION.
         committer = determine_user_details( lv_changed_by )
         comment   = zcl_bg_factory=>get_transports( )->read_description( iv_trkorr ) ).
 
-      DATA(lo_stage) = NEW zcl_abapgit_stage(
-        iv_branch_name = mo_repo->get_branch_name( )
-        iv_branch_sha1 = mo_repo->get_sha1_remote( ) ).
+      DATA(lo_stage) = NEW zcl_abapgit_stage( ).
 
       LOOP AT ls_files-local ASSIGNING <ls_local>.
         READ TABLE lt_changed WITH KEY
@@ -215,7 +213,7 @@ CLASS ZCL_ABAPGIT_TRAN_TO_BRAN IMPLEMENTATION.
 
   METHOD zif_abapgit_background~run.
 
-    mo_log = io_log.
+    mo_log  = io_log.
     mo_repo = io_repo.
 
     LOOP AT zcl_bg_factory=>get_transports( )->list_open( ) INTO DATA(lv_trkorr).
