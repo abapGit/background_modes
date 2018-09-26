@@ -68,8 +68,10 @@ CLASS ZCL_ABAPGIT_TRAN_TO_BRAN IMPLEMENTATION.
           lt_changed TYPE STANDARD TABLE OF ty_changed WITH DEFAULT KEY.
 
 
-    DATA(ls_files) = zcl_abapgit_stage_logic=>get( mo_repo ).
-    DATA(lt_objects) = zcl_bg_factory=>get_objects( )->to_r3tr( zcl_bg_factory=>get_transports( )->list_contents( iv_trkorr ) ).
+    DATA(ls_files) = zcl_abapgit_factory=>get_stage_logic( )->get( mo_repo ).
+
+    DATA(lt_objects) = zcl_bg_factory=>get_objects( )->to_r3tr(
+      zcl_bg_factory=>get_transports( )->list_contents( iv_trkorr ) ).
 
     LOOP AT ls_files-local ASSIGNING FIELD-SYMBOL(<ls_local>) WHERE NOT item-obj_type IS INITIAL.
       IF NOT line_exists( lt_objects[ object = <ls_local>-item-obj_type obj_name = <ls_local>-item-obj_name ] ).
