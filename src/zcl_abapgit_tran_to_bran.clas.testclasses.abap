@@ -86,8 +86,8 @@ CLASS ltcl_is_relevant DEFINITION DEFERRED.
 CLASS zcl_abapgit_tran_to_bran DEFINITION LOCAL FRIENDS ltcl_is_relevant.
 
 CLASS ltcl_is_relevant DEFINITION FOR TESTING
-  DURATION SHORT
-  RISK LEVEL HARMLESS FINAL.
+    DURATION SHORT
+    RISK LEVEL HARMLESS FINAL.
 
   PRIVATE SECTION.
     DATA:
@@ -188,8 +188,13 @@ CLASS ltcl_build_stage DEFINITION DEFERRED.
 CLASS zcl_abapgit_tran_to_bran DEFINITION LOCAL FRIENDS ltcl_build_stage.
 
 CLASS ltcl_build_stage DEFINITION FOR TESTING
-  DURATION SHORT
-  RISK LEVEL HARMLESS FINAL.
+    DURATION SHORT
+    RISK LEVEL HARMLESS FINAL.
+
+  PUBLIC SECTION.
+    INTERFACES:
+      zif_abapgit_stage_logic PARTIALLY IMPLEMENTED,
+      zif_bg_transports PARTIALLY IMPLEMENTED.
 
   PRIVATE SECTION.
     DATA:
@@ -197,7 +202,7 @@ CLASS ltcl_build_stage DEFINITION FOR TESTING
 
     METHODS:
       setup,
-      test01 FOR TESTING RAISING zcx_abapgit_exception.
+      test01 FOR TESTING RAISING cx_static_check.
 
 ENDCLASS.
 
@@ -205,13 +210,35 @@ CLASS ltcl_build_stage IMPLEMENTATION.
 
   METHOD setup.
     mo_cut = NEW #( ).
+    mo_cut->mo_log = NEW zcl_abapgit_log( ).
+
+    zcl_abapgit_injector=>set_stage_logic( me ).
+    zcl_bg_injector=>set_transports( me ).
+  ENDMETHOD.
+
+  METHOD zif_abapgit_stage_logic~get.
+    rs_files = VALUE #(
+      local = VALUE #( ( item-obj_type = 'PROG' item-obj_name = 'ZFOOBAR' ) ) ).
+  ENDMETHOD.
+
+  METHOD zif_bg_transports~read_description.
+    rv_description = |Hello World|.
+  ENDMETHOD.
+
+  METHOD zif_bg_transports~list_contents.
+    rt_list = VALUE #( (
+      pgmid    = 'R3TR'
+      object   = 'PROG'
+      obj_name = 'ZFOOBAR' ) ).
   ENDMETHOD.
 
   METHOD test01.
 
     DATA(lt_result) = mo_cut->build_stage( 'ABC123' ).
 
-* todo
+    cl_abap_unit_assert=>assert_equals(
+      act = lines( lt_result )
+      exp = 1  ).
 
   ENDMETHOD.
 

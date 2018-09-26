@@ -16,15 +16,19 @@ CLASS ZCL_BG_TRANSPORTS IMPLEMENTATION.
 
   METHOD zif_bg_transports~list_contents.
 
-    DATA(lt_list) = zif_bg_transports~list_sub( iv_trkorr ).
+    SELECT SINGLE trkorr FROM e070 INTO @DATA(lv_trkorr) WHERE trkorr = @iv_trkorr.
+    IF sy-subrc <> 0.
+      RAISE EXCEPTION TYPE zcx_abapgit_not_found.
+    ENDIF.
 
+    DATA(lt_list) = zif_bg_transports~list_sub( iv_trkorr ).
     ASSERT lines( lt_list ) > 0.
 
     SELECT DISTINCT pgmid object obj_name
       FROM e071
       INTO CORRESPONDING FIELDS OF TABLE rt_list
       FOR ALL ENTRIES IN lt_list
-      WHERE trkorr = lt_list-table_line.
+      WHERE trkorr = lt_list-table_line.                  "#EC CI_SUBRC
 
   ENDMETHOD.
 
@@ -36,7 +40,7 @@ CLASS ZCL_BG_TRANSPORTS IMPLEMENTATION.
       WHERE trfunction = 'K'
       AND trstatus = 'D'
       AND korrdev = 'SYST'
-      AND strkorr = ''.
+      AND strkorr = ''.                                   "#EC CI_SUBRC
 
   ENDMETHOD.
 
@@ -46,7 +50,7 @@ CLASS ZCL_BG_TRANSPORTS IMPLEMENTATION.
     APPEND iv_trkorr TO rt_list.
 
     SELECT trkorr FROM e070 APPENDING TABLE rt_list
-      WHERE strkorr = iv_trkorr.
+      WHERE strkorr = iv_trkorr.                          "#EC CI_SUBRC
 
   ENDMETHOD.
 
@@ -56,7 +60,9 @@ CLASS ZCL_BG_TRANSPORTS IMPLEMENTATION.
     SELECT SINGLE as4text FROM e07t
       INTO rv_description
       WHERE trkorr = iv_trkorr AND langu = sy-langu.
-    ASSERT sy-subrc = 0.
+    IF sy-subrc <> 0.
+      RAISE EXCEPTION TYPE zcx_abapgit_not_found.
+    ENDIF.
 
   ENDMETHOD.
 ENDCLASS.

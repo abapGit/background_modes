@@ -24,7 +24,8 @@ CLASS zcl_abapgit_tran_to_bran DEFINITION
       RETURNING
         VALUE(rt_stage) TYPE ty_stage_tt
       RAISING
-        zcx_abapgit_exception .
+        zcx_abapgit_exception
+        zcx_abapgit_not_found .
     METHODS create_or_set_branch
       IMPORTING
         !iv_name TYPE string
@@ -34,6 +35,7 @@ CLASS zcl_abapgit_tran_to_bran DEFINITION
       IMPORTING
         !iv_trkorr TYPE trkorr
       RAISING
+        zcx_abapgit_not_found
         zcx_abapgit_exception .
     METHODS is_relevant
       IMPORTING
@@ -201,7 +203,7 @@ CLASS ZCL_ABAPGIT_TRAN_TO_BRAN IMPLEMENTATION.
 
   METHOD zif_abapgit_background~get_description.
 
-    rv_description = 'Push: Transport to branch'.
+    rv_description = |Push: Transport to branch|.
 
   ENDMETHOD.
 
@@ -220,7 +222,8 @@ CLASS ZCL_ABAPGIT_TRAN_TO_BRAN IMPLEMENTATION.
 
     LOOP AT zcl_bg_factory=>get_transports( )->list_open( ) INTO DATA(lv_trkorr).
 
-      DATA(lt_objects) = zcl_bg_factory=>get_objects( )->to_r3tr( zcl_bg_factory=>get_transports( )->list_contents( lv_trkorr ) ).
+      DATA(lt_objects) = zcl_bg_factory=>get_objects( )->to_r3tr(
+        zcl_bg_factory=>get_transports( )->list_contents( lv_trkorr ) ).
 
       IF is_relevant( iv_main    = io_repo->get_package( )
                       it_objects = lt_objects ) = abap_false.
@@ -232,13 +235,16 @@ CLASS ZCL_ABAPGIT_TRAN_TO_BRAN IMPLEMENTATION.
 
       push( lv_trkorr ).
 
-* todo, list objects in commit body
-* todo, handle released transports
+* __ 1st priority __
 * todo, handle deletions
-* todo, TABU, table contents?
-* todo, LIMU object in multiple transports?
 * todo, Moving objects
 * todo, Objects outside of repo
+
+* __ 2nd priority __
+* todo, TABU, table contents?
+* todo, LIMU object in multiple transports?
+* todo, list objects in commit body?
+* todo, handle released transports
 
     ENDLOOP.
 
