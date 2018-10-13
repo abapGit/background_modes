@@ -68,104 +68,93 @@ CLASS zcl_abapgit_tran_to_bran IMPLEMENTATION.
 
     DATA: lt_users          TYPE SORTED TABLE OF xubname WITH UNIQUE KEY table_line,
           lt_changed        TYPE STANDARD TABLE OF ty_changed WITH DEFAULT KEY,
-          lo_deletion_stage TYPE REF TO zcl_abapgit_stage.
+          lv_changed_by     TYPE xubname.
 
-    FIELD-SYMBOLS: <ls_remote> TYPE zif_abapgit_definitions=>ty_file.
+    FIELD-SYMBOLS: <ls_status> TYPE zif_abapgit_definitions=>ty_result.
 
     DATA(ls_files) = zcl_abapgit_factory=>get_stage_logic( )->get( mo_repo ).
+    DATA(lt_file_status) = zcl_abapgit_file_status=>status( mo_repo ).
     DATA(li_transports) = zcl_bg_factory=>get_transports( ).
     DATA(lt_objects) = zcl_bg_factory=>get_objects( )->to_r3tr( li_transports->list_contents( iv_trkorr ) ).
     DATA(lv_transport_owner) = li_transports->read_owner( iv_trkorr ).
 
-    LOOP AT ls_files-local ASSIGNING FIELD-SYMBOL(<ls_local>) WHERE NOT item-obj_type IS INITIAL.
-      IF NOT line_exists( lt_objects[ object = <ls_local>-item-obj_type obj_name = <ls_local>-item-obj_name ] ).
+    LOOP AT lt_file_status ASSIGNING <ls_status> WHERE obj_type IS NOT INITIAL.
+      IF NOT line_exists( lt_objects[ object = <ls_status>-obj_type obj_name = <ls_status>-obj_name ] ).
         CONTINUE.
       ENDIF.
-      mo_log->add_info( |{ <ls_local>-item-obj_type } { <ls_local>-item-obj_name } relevant| ).
 
-      APPEND INITIAL LINE TO lt_changed ASSIGNING FIELD-SYMBOL(<ls_changed>).
-      <ls_changed>-changed_by = zcl_abapgit_objects=>changed_by( <ls_local>-item ).
-      <ls_changed>-filename   = <ls_local>-file-filename.
-      <ls_changed>-path       = <ls_local>-file-path.
+      TRY.
+          lv_changed_by = zcl_abapgit_objects=>changed_by( VALUE #( obj_type = <ls_status>-obj_type
+                                                                    obj_name = <ls_status>-obj_name
+                                                                    devclass = <ls_status>-package ) ).
+        CATCH zcx_abapgit_exception.
+          lv_changed_by = zcl_abapgit_objects_super=>c_user_unknown.
+      ENDTRY.
 
+      APPEND VALUE #(
+        changed_by = lv_changed_by
+        filename   = <ls_status>-filename
+        path       = <ls_status>-path
+      ) TO lt_changed ASSIGNING FIELD-SYMBOL(<ls_changed>).
+
+      IF <ls_changed>-changed_by =  zcl_abapgit_objects_super=>c_user_unknown AND
+         <ls_status>-lstate = zif_abapgit_definitions=>c_state-deleted.
+        <ls_changed>-changed_by = lv_transport_owner.
+      ENDIF.
       INSERT <ls_changed>-changed_by INTO TABLE lt_users.
+      UNASSIGN <ls_changed>.
+      CLEAR lv_changed_by.
     ENDLOOP.
+    UNASSIGN <ls_status>.
 
-    LOOP AT lt_users INTO DATA(lv_changed_by).
+    LOOP AT lt_users INTO lv_changed_by.
       DATA(ls_comment) = VALUE zif_abapgit_definitions=>ty_comment(
         committer = determine_user_details( lv_changed_by )
         comment   = zcl_bg_factory=>get_transports( )->read_description( iv_trkorr ) ).
 
       DATA(lo_stage) = NEW zcl_abapgit_stage( ).
 
-      LOOP AT ls_files-local ASSIGNING <ls_local>.
+      LOOP AT lt_file_status ASSIGNING <ls_status>.
         READ TABLE lt_changed WITH KEY
-          path = <ls_local>-file-path
-          filename = <ls_local>-file-filename
+          path       = <ls_status>-path
+          filename   = <ls_status>-filename
           changed_by = lv_changed_by
           TRANSPORTING NO FIELDS.
         IF sy-subrc = 0.
-          mo_log->add_info( |stage: {
-            ls_comment-committer-name } {
-            <ls_local>-file-path } {
-            <ls_local>-file-filename }| ).
+          CASE <ls_status>-lstate.
+            WHEN zif_abapgit_definitions=>c_state-unchanged.
+              CONTINUE.
 
-          lo_stage->add( iv_path     = <ls_local>-file-path
-                         iv_filename = <ls_local>-file-filename
-                         iv_data     = <ls_local>-file-data ).
+            WHEN zif_abapgit_definitions=>c_state-modified
+              OR zif_abapgit_definitions=>c_state-added.
 
-          LOOP AT ls_files-remote ASSIGNING <ls_remote>
-              WHERE filename = <ls_local>-file-filename
-              AND path <> <ls_local>-file-path
-              AND filename <> 'package.devc.xml'.
-            mo_log->add_info( |rm: {
-              <ls_remote>-path } {
-              <ls_remote>-filename }| ).
+              mo_log->add_info( |stage: {
+                ls_comment-committer-name } {
+                <ls_status>-path } {
+                <ls_status>-filename }| ).
 
-            lo_stage->rm(
-              iv_path     = <ls_remote>-path
-              iv_filename = <ls_remote>-filename ).
-            EXIT.
-          ENDLOOP.
-          UNASSIGN <ls_remote>.
+              DATA(lv_data) = ls_files-local[ file-filename = <ls_status>-filename
+                                              file-path     = <ls_status>-path ]-file-data.
+
+              lo_stage->add( iv_path     = <ls_status>-path
+                             iv_filename = <ls_status>-filename
+                             iv_data     = lv_data ).
+
+            WHEN zif_abapgit_definitions=>c_state-deleted.
+              mo_log->add_info( |rm: {
+                ls_comment-committer-name } {
+                <ls_status>-path } {
+                <ls_status>-filename }| ).
+              lo_stage->rm( iv_path     = <ls_status>-path
+                            iv_filename = <ls_status>-filename ).
+          ENDCASE.
         ENDIF.
       ENDLOOP.
 
-      IF lv_changed_by = lv_transport_owner.
-        lo_deletion_stage = lo_stage.
+      IF lo_stage->count( ) > 0.
+        APPEND VALUE #( comment = ls_comment stage = lo_stage ) TO rt_stage.
       ENDIF.
-
-      APPEND VALUE #( comment = ls_comment stage = lo_stage ) TO rt_stage.
     ENDLOOP.
-
-    IF lines( ls_files-remote ) > 0.
-      LOOP AT ls_files-remote ASSIGNING <ls_remote>.
-        IF 1 = 1.
-          " Check if deletion is not contained within the current transport request / task
-          " path and filename need to be converted to obj_type and obj_name
-          " zcl_abapgit_file_status=>identify_object ???
-          CONTINUE.
-        ENDIF.
-
-        IF lo_deletion_stage IS NOT BOUND.
-          lo_deletion_stage = NEW #( ).
-          ls_comment = VALUE zif_abapgit_definitions=>ty_comment(
-            committer = determine_user_details( lv_transport_owner )
-            comment   = zcl_bg_factory=>get_transports( )->read_description( iv_trkorr ) ).
-          APPEND VALUE #( comment = ls_comment stage = lo_deletion_stage ) TO rt_stage.
-        ENDIF.
-
-        mo_log->add_info( |removed: {
-          <ls_remote>-path } {
-          <ls_remote>-filename }| ).
-
-        lo_deletion_stage->rm( iv_path     = <ls_remote>-path
-                               iv_filename = <ls_remote>-filename ).
-
-      ENDLOOP.
-      UNASSIGN <ls_remote>.
-    ENDIF.
-
   ENDMETHOD.
 
 
