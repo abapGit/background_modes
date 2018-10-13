@@ -66,14 +66,16 @@ CLASS zcl_abapgit_tran_to_bran IMPLEMENTATION.
              changed_by TYPE xubname,
            END OF ty_changed.
 
-    DATA: lt_users   TYPE SORTED TABLE OF xubname WITH UNIQUE KEY table_line,
-          lt_changed TYPE STANDARD TABLE OF ty_changed WITH DEFAULT KEY.
+    DATA: lt_users          TYPE SORTED TABLE OF xubname WITH UNIQUE KEY table_line,
+          lt_changed        TYPE STANDARD TABLE OF ty_changed WITH DEFAULT KEY,
+          lo_deletion_stage TYPE REF TO zcl_abapgit_stage.
 
+    FIELD-SYMBOLS: <ls_remote> TYPE zif_abapgit_definitions=>ty_file.
 
     DATA(ls_files) = zcl_abapgit_factory=>get_stage_logic( )->get( mo_repo ).
-
-    DATA(lt_objects) = zcl_bg_factory=>get_objects( )->to_r3tr(
-      zcl_bg_factory=>get_transports( )->list_contents( iv_trkorr ) ).
+    DATA(li_transports) = zcl_bg_factory=>get_transports( ).
+    DATA(lt_objects) = zcl_bg_factory=>get_objects( )->to_r3tr( li_transports->list_contents( iv_trkorr ) ).
+    DATA(lv_transport_owner) = li_transports->read_owner( iv_trkorr ).
 
     LOOP AT ls_files-local ASSIGNING FIELD-SYMBOL(<ls_local>) WHERE NOT item-obj_type IS INITIAL.
       IF NOT line_exists( lt_objects[ object = <ls_local>-item-obj_type obj_name = <ls_local>-item-obj_name ] ).
@@ -111,11 +113,58 @@ CLASS zcl_abapgit_tran_to_bran IMPLEMENTATION.
           lo_stage->add( iv_path     = <ls_local>-file-path
                          iv_filename = <ls_local>-file-filename
                          iv_data     = <ls_local>-file-data ).
+
+          LOOP AT ls_files-remote ASSIGNING <ls_remote>
+              WHERE filename = <ls_local>-file-filename
+              AND path <> <ls_local>-file-path
+              AND filename <> 'package.devc.xml'.
+            mo_log->add_info( |rm: {
+              <ls_remote>-path } {
+              <ls_remote>-filename }| ).
+
+            lo_stage->rm(
+              iv_path     = <ls_remote>-path
+              iv_filename = <ls_remote>-filename ).
+            EXIT.
+          ENDLOOP.
+          UNASSIGN <ls_remote>.
         ENDIF.
       ENDLOOP.
 
+      IF lv_changed_by = lv_transport_owner.
+        lo_deletion_stage = lo_stage.
+      ENDIF.
+
       APPEND VALUE #( comment = ls_comment stage = lo_stage ) TO rt_stage.
     ENDLOOP.
+
+    IF lines( ls_files-remote ) > 0.
+      LOOP AT ls_files-remote ASSIGNING <ls_remote>.
+        IF 1 = 1.
+          " Check if deletion is not contained within the current transport request / task
+          " path and filename need to be converted to obj_type and obj_name
+          " zcl_abapgit_file_status=>identify_object ???
+          CONTINUE.
+        ENDIF.
+
+        IF lo_deletion_stage IS NOT BOUND.
+          lo_deletion_stage = NEW #( ).
+          ls_comment = VALUE zif_abapgit_definitions=>ty_comment(
+            committer = determine_user_details( lv_transport_owner )
+            comment   = zcl_bg_factory=>get_transports( )->read_description( iv_trkorr ) ).
+          APPEND VALUE #( comment = ls_comment stage = lo_deletion_stage ) TO rt_stage.
+        ENDIF.
+
+        mo_log->add_info( |removed: {
+          <ls_remote>-path } {
+          <ls_remote>-filename }| ).
+
+        lo_deletion_stage->rm( iv_path     = <ls_remote>-path
+                               iv_filename = <ls_remote>-filename ).
+
+      ENDLOOP.
+      UNASSIGN <ls_remote>.
+    ENDIF.
 
   ENDMETHOD.
 
