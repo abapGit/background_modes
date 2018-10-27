@@ -232,6 +232,10 @@ CLASS ltcl_build_stage IMPLEMENTATION.
       obj_name = 'ZFOOBAR' ) ).
   ENDMETHOD.
 
+  METHOD zif_bg_transports~read_owner.
+    rv_owner = sy-uname.
+  ENDMETHOD.
+
   METHOD test01.
 
     DATA(lt_result) = mo_cut->build_stage( 'ABC123' ).

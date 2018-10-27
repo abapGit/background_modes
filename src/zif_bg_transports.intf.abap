@@ -12,6 +12,13 @@ INTERFACE zif_bg_transports
       VALUE(rv_description) TYPE string
     RAISING
       zcx_abapgit_not_found .
+  CLASS-METHODS read_owner
+    IMPORTING
+      iv_trkorr       TYPE trkorr
+    RETURNING
+      VALUE(rv_owner) TYPE tr_as4user
+    RAISING
+      zcx_abapgit_not_found.
   CLASS-METHODS list_contents
     IMPORTING
       !iv_trkorr     TYPE trkorr

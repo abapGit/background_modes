@@ -65,4 +65,13 @@ CLASS ZCL_BG_TRANSPORTS IMPLEMENTATION.
     ENDIF.
 
   ENDMETHOD.
+
+  METHOD zif_bg_transports~read_owner.
+    SELECT SINGLE as4user INTO @rv_owner
+      FROM e070
+      WHERE trkorr = @iv_trkorr.
+    IF sy-subrc <> 0.
+      RAISE EXCEPTION TYPE zcx_abapgit_not_found.
+    ENDIF.
+  ENDMETHOD.
 ENDCLASS.
