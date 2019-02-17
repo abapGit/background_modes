@@ -14,6 +14,18 @@ CLASS zcl_abapgit_tran_to_bran DEFINITION
       END OF ty_stage .
     TYPES:
       ty_stage_tt TYPE STANDARD TABLE OF ty_stage WITH EMPTY KEY .
+    TYPES:
+      BEGIN OF ty_file,
+        filename TYPE string,
+        path     TYPE string,
+      END OF ty_file .
+    TYPES:
+      BEGIN OF ty_changed,
+        username TYPE xubname,
+        files    TYPE STANDARD TABLE OF ty_file WITH EMPTY KEY,
+      END OF ty_changed .
+    TYPES:
+      ty_changed_tt TYPE SORTED TABLE OF ty_changed WITH UNIQUE KEY username .
 
     DATA mo_log TYPE REF TO zcl_abapgit_log .
     DATA mo_repo TYPE REF TO zcl_abapgit_repo_online .
@@ -24,19 +36,24 @@ CLASS zcl_abapgit_tran_to_bran DEFINITION
       RETURNING
         VALUE(rt_stage) TYPE ty_stage_tt
       RAISING
-        zcx_abapgit_exception
-        zcx_abapgit_not_found .
+        zcx_abapgit_exception .
     METHODS create_or_set_branch
       IMPORTING
         !iv_name TYPE string
       RAISING
         zcx_abapgit_exception .
-    METHODS push
+    METHODS determine_changed
       IMPORTING
-        !iv_trkorr TYPE trkorr
+        !iv_trkorr        TYPE trkorr
+      RETURNING
+        VALUE(rt_changed) TYPE ty_changed_tt
       RAISING
-        zcx_abapgit_not_found
         zcx_abapgit_exception .
+    METHODS determine_user_details
+      IMPORTING
+        !iv_changed_by TYPE xubname
+      RETURNING
+        VALUE(rs_user) TYPE zif_abapgit_definitions=>ty_git_user .
     METHODS is_relevant
       IMPORTING
         !iv_main           TYPE devclass
@@ -45,116 +62,74 @@ CLASS zcl_abapgit_tran_to_bran DEFINITION
         VALUE(rv_relevant) TYPE abap_bool
       RAISING
         zcx_abapgit_exception .
-    METHODS determine_user_details
+    METHODS push
       IMPORTING
-        !iv_changed_by TYPE xubname
-      RETURNING
-        VALUE(rs_user) TYPE zif_abapgit_definitions=>ty_git_user .
+        !iv_trkorr TYPE trkorr
+      RAISING
+        zcx_abapgit_exception .
   PRIVATE SECTION.
 ENDCLASS.
 
 
 
-CLASS zcl_abapgit_tran_to_bran IMPLEMENTATION.
+CLASS ZCL_ABAPGIT_TRAN_TO_BRAN IMPLEMENTATION.
 
 
   METHOD build_stage.
 
-    TYPES: BEGIN OF ty_changed,
-             filename   TYPE string,
-             path       TYPE string,
-             changed_by TYPE xubname,
-           END OF ty_changed.
-
-    DATA: lt_users          TYPE SORTED TABLE OF xubname WITH UNIQUE KEY table_line,
-          lt_changed        TYPE STANDARD TABLE OF ty_changed WITH DEFAULT KEY,
-          lv_changed_by     TYPE xubname.
-
-    FIELD-SYMBOLS: <ls_status> TYPE zif_abapgit_definitions=>ty_result.
-
     DATA(ls_files) = zcl_abapgit_factory=>get_stage_logic( )->get( mo_repo ).
     DATA(lt_file_status) = zcl_abapgit_file_status=>status( mo_repo ).
-    DATA(li_transports) = zcl_bg_factory=>get_transports( ).
-    DATA(lt_objects) = zcl_bg_factory=>get_objects( )->to_r3tr( li_transports->list_contents( iv_trkorr ) ).
-    DATA(lv_transport_owner) = li_transports->read_owner( iv_trkorr ).
 
-    LOOP AT lt_file_status ASSIGNING <ls_status> WHERE obj_type IS NOT INITIAL.
-      IF NOT line_exists( lt_objects[ object = <ls_status>-obj_type obj_name = <ls_status>-obj_name ] ).
-        CONTINUE.
-      ENDIF.
+    DATA(lt_changed) = determine_changed( iv_trkorr ).
 
-      TRY.
-          lv_changed_by = zcl_abapgit_objects=>changed_by( VALUE #( obj_type = <ls_status>-obj_type
-                                                                    obj_name = <ls_status>-obj_name
-                                                                    devclass = <ls_status>-package ) ).
-        CATCH zcx_abapgit_exception.
-          lv_changed_by = zcl_abapgit_objects_super=>c_user_unknown.
-      ENDTRY.
-
-      APPEND VALUE #(
-        changed_by = lv_changed_by
-        filename   = <ls_status>-filename
-        path       = <ls_status>-path
-      ) TO lt_changed ASSIGNING FIELD-SYMBOL(<ls_changed>).
-
-      IF <ls_changed>-changed_by =  zcl_abapgit_objects_super=>c_user_unknown AND
-         <ls_status>-lstate = zif_abapgit_definitions=>c_state-deleted.
-        <ls_changed>-changed_by = lv_transport_owner.
-      ENDIF.
-      INSERT <ls_changed>-changed_by INTO TABLE lt_users.
-      UNASSIGN <ls_changed>.
-      CLEAR lv_changed_by.
-    ENDLOOP.
-    UNASSIGN <ls_status>.
-
-    LOOP AT lt_users INTO lv_changed_by.
+    LOOP AT lt_changed INTO DATA(ls_changed).
       DATA(ls_comment) = VALUE zif_abapgit_definitions=>ty_comment(
-        committer = determine_user_details( lv_changed_by )
+        committer = determine_user_details( ls_changed-username )
         comment   = zcl_bg_factory=>get_transports( )->read_description( iv_trkorr ) ).
 
       DATA(lo_stage) = NEW zcl_abapgit_stage( ).
 
-      LOOP AT lt_file_status ASSIGNING <ls_status>.
-        READ TABLE lt_changed WITH KEY
+      LOOP AT lt_file_status ASSIGNING FIELD-SYMBOL(<ls_status>)
+          WHERE lstate <> zif_abapgit_definitions=>c_state-unchanged.
+        READ TABLE ls_changed-files WITH KEY
           path       = <ls_status>-path
           filename   = <ls_status>-filename
-          changed_by = lv_changed_by
           TRANSPORTING NO FIELDS.
-        IF sy-subrc = 0.
-          CASE <ls_status>-lstate.
-            WHEN zif_abapgit_definitions=>c_state-unchanged.
-              CONTINUE.
-
-            WHEN zif_abapgit_definitions=>c_state-modified
-              OR zif_abapgit_definitions=>c_state-added.
-
-              mo_log->add_info( |stage: {
-                ls_comment-committer-name } {
-                <ls_status>-path } {
-                <ls_status>-filename }| ).
-
-              DATA(lv_data) = ls_files-local[ file-filename = <ls_status>-filename
-                                              file-path     = <ls_status>-path ]-file-data.
-
-              lo_stage->add( iv_path     = <ls_status>-path
-                             iv_filename = <ls_status>-filename
-                             iv_data     = lv_data ).
-
-            WHEN zif_abapgit_definitions=>c_state-deleted.
-              mo_log->add_info( |rm: {
-                ls_comment-committer-name } {
-                <ls_status>-path } {
-                <ls_status>-filename }| ).
-              lo_stage->rm( iv_path     = <ls_status>-path
-                            iv_filename = <ls_status>-filename ).
-          ENDCASE.
+        IF sy-subrc <> 0.
+          CONTINUE.
         ENDIF.
+
+        CASE <ls_status>-lstate.
+          WHEN zif_abapgit_definitions=>c_state-modified
+              OR zif_abapgit_definitions=>c_state-added.
+            mo_log->add_info( |stage: {
+              ls_comment-committer-name } {
+              <ls_status>-path } {
+              <ls_status>-filename }| ).
+
+            DATA(lv_data) = ls_files-local[ file-filename = <ls_status>-filename
+                                            file-path     = <ls_status>-path ]-file-data.
+
+            lo_stage->add( iv_path     = <ls_status>-path
+                           iv_filename = <ls_status>-filename
+                           iv_data     = lv_data ).
+
+          WHEN zif_abapgit_definitions=>c_state-deleted.
+            mo_log->add_info( |rm: {
+              ls_comment-committer-name } {
+              <ls_status>-path } {
+              <ls_status>-filename }| ).
+
+            lo_stage->rm( iv_path     = <ls_status>-path
+                          iv_filename = <ls_status>-filename ).
+        ENDCASE.
       ENDLOOP.
 
       IF lo_stage->count( ) > 0.
         APPEND VALUE #( comment = ls_comment stage = lo_stage ) TO rt_stage.
       ENDIF.
     ENDLOOP.
+
   ENDMETHOD.
 
 
@@ -171,6 +146,46 @@ CLASS zcl_abapgit_tran_to_bran IMPLEMENTATION.
     ENDIF.
 
     mo_repo->set_branch_name( iv_name ).
+
+  ENDMETHOD.
+
+
+  METHOD determine_changed.
+
+    DATA(li_transports) = zcl_bg_factory=>get_transports( ).
+    DATA(lv_transport_owner) = li_transports->read_owner( iv_trkorr ).
+    DATA(lt_objects) = zcl_bg_factory=>get_objects( )->to_r3tr( li_transports->list_contents( iv_trkorr ) ).
+    DATA(lt_file_status) = zcl_abapgit_file_status=>status( mo_repo ).
+
+    LOOP AT lt_file_status ASSIGNING FIELD-SYMBOL(<ls_status>) WHERE obj_type IS NOT INITIAL.
+      IF NOT line_exists( lt_objects[ object   = <ls_status>-obj_type
+                                      obj_name = <ls_status>-obj_name ] ).
+        CONTINUE.
+      ENDIF.
+
+      TRY.
+          DATA(lv_changed_by) = zcl_abapgit_objects=>changed_by( VALUE #(
+            obj_type = <ls_status>-obj_type
+            obj_name = <ls_status>-obj_name
+            devclass = <ls_status>-package ) ).
+        CATCH zcx_abapgit_exception.
+* this happens if the object type is not supported by abapGit?
+          lv_changed_by = zcl_abapgit_objects_super=>c_user_unknown.
+      ENDTRY.
+
+      IF lv_changed_by = zcl_abapgit_objects_super=>c_user_unknown
+          AND <ls_status>-lstate = zif_abapgit_definitions=>c_state-deleted.
+        lv_changed_by = lv_transport_owner.
+      ENDIF.
+
+      INSERT VALUE #( username = lv_changed_by ) INTO TABLE rt_changed.
+
+      ASSIGN rt_changed[ username = lv_changed_by ]-files TO FIELD-SYMBOL(<lt_files>).
+      APPEND VALUE #(
+        filename   = <ls_status>-filename
+        path       = <ls_status>-path
+        ) TO <lt_files>.
+    ENDLOOP.
 
   ENDMETHOD.
 
@@ -251,7 +266,7 @@ CLASS zcl_abapgit_tran_to_bran IMPLEMENTATION.
 
   METHOD zif_abapgit_background~get_settings.
 
-    RETURN.
+    APPEND VALUE #( key = 'ERRORS_EMAIL' value = '' ) TO ct_settings.
 
   ENDMETHOD.
 
@@ -277,15 +292,17 @@ CLASS zcl_abapgit_tran_to_bran IMPLEMENTATION.
       push( lv_trkorr ).
 
 * __ 1st priority __
+* todo, objects not supported by abapGit
 * todo, handle deletions
-* todo, Moving objects
+* todo, Moving objects between transports
 * todo, Objects outside of repo
+* todo, R3TR->LIMU object in multiple transports
+* todo, transport with changes for 2 repos
 
 * __ 2nd priority __
-* todo, TABU, table contents?
-* todo, LIMU object in multiple transports?
-* todo, list objects in commit body?
-* todo, handle released transports
+* todo, TABU, table contents
+* todo, list objects in commit body
+* todo, how to handle released transports
 
     ENDLOOP.
 

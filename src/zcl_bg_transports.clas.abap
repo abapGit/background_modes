@@ -18,7 +18,7 @@ CLASS ZCL_BG_TRANSPORTS IMPLEMENTATION.
 
     SELECT SINGLE trkorr FROM e070 INTO @DATA(lv_trkorr) WHERE trkorr = @iv_trkorr.
     IF sy-subrc <> 0.
-      RAISE EXCEPTION TYPE zcx_abapgit_not_found.
+      RAISE EXCEPTION TYPE zcx_abapgit_exception.
     ENDIF.
 
     DATA(lt_list) = zif_bg_transports~list_sub( iv_trkorr ).
@@ -61,17 +61,18 @@ CLASS ZCL_BG_TRANSPORTS IMPLEMENTATION.
       INTO rv_description
       WHERE trkorr = iv_trkorr AND langu = sy-langu.
     IF sy-subrc <> 0.
-      RAISE EXCEPTION TYPE zcx_abapgit_not_found.
+      RAISE EXCEPTION TYPE zcx_abapgit_exception.
     ENDIF.
 
   ENDMETHOD.
+
 
   METHOD zif_bg_transports~read_owner.
     SELECT SINGLE as4user INTO @rv_owner
       FROM e070
       WHERE trkorr = @iv_trkorr.
     IF sy-subrc <> 0.
-      RAISE EXCEPTION TYPE zcx_abapgit_not_found.
+      RAISE EXCEPTION TYPE zcx_abapgit_exception.
     ENDIF.
   ENDMETHOD.
 ENDCLASS.
