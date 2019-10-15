@@ -11,10 +11,15 @@
       "url": "https://github.com/abaplint/deps",
       "folder": "/deps",
       "files": "/src/**/*.*"
-    }
+    },
+    {
+      "url": "https://github.com/larshp/abapGit",
+      "folder": "/git",
+      "files": "/src/**/*.*"
+    }    
   ],
   "syntax": {
-    "version": "v755",
+    "version": "v740sp08",
     "errorNamespace": "^(Z|Y)",
     "globalConstants": [],
     "globalMacros": []
