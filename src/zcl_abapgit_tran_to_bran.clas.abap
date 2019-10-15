@@ -27,7 +27,7 @@ CLASS zcl_abapgit_tran_to_bran DEFINITION
     TYPES:
       ty_changed_tt TYPE SORTED TABLE OF ty_changed WITH UNIQUE KEY username .
 
-    DATA mo_log TYPE REF TO zcl_abapgit_log .
+    DATA mi_log TYPE REF TO zif_abapgit_log .
     DATA mo_repo TYPE REF TO zcl_abapgit_repo_online .
 
     METHODS build_stage
@@ -102,7 +102,7 @@ CLASS ZCL_ABAPGIT_TRAN_TO_BRAN IMPLEMENTATION.
         CASE <ls_status>-lstate.
           WHEN zif_abapgit_definitions=>c_state-modified
               OR zif_abapgit_definitions=>c_state-added.
-            mo_log->add_info( |stage: {
+            mi_log->add_info( |stage: {
               ls_comment-committer-name } {
               <ls_status>-path } {
               <ls_status>-filename }| ).
@@ -115,7 +115,7 @@ CLASS ZCL_ABAPGIT_TRAN_TO_BRAN IMPLEMENTATION.
                            iv_data     = lv_data ).
 
           WHEN zif_abapgit_definitions=>c_state-deleted.
-            mo_log->add_info( |rm: {
+            mi_log->add_info( |rm: {
               ls_comment-committer-name } {
               <ls_status>-path } {
               <ls_status>-filename }| ).
@@ -142,7 +142,7 @@ CLASS ZCL_ABAPGIT_TRAN_TO_BRAN IMPLEMENTATION.
         iv_name = iv_name
         iv_from = lt_branches[ is_head = abap_true ]-sha1 ).
 
-      mo_log->add_info( |Branch { iv_name } created| ).
+      mi_log->add_info( |Branch { iv_name } created| ).
     ENDIF.
 
     mo_repo->set_branch_name( iv_name ).
@@ -244,7 +244,7 @@ CLASS ZCL_ABAPGIT_TRAN_TO_BRAN IMPLEMENTATION.
     DATA(lt_stage) = build_stage( iv_trkorr ).
 
     LOOP AT lt_stage INTO DATA(ls_stage).
-      mo_log->add_info( |push| ).
+      mi_log->add_info( |push| ).
 
 * output info here?
 
@@ -273,7 +273,7 @@ CLASS ZCL_ABAPGIT_TRAN_TO_BRAN IMPLEMENTATION.
 
   METHOD zif_abapgit_background~run.
 
-    mo_log  = io_log.
+    mi_log  = ii_log.
     mo_repo = io_repo.
 
     LOOP AT zcl_bg_factory=>get_transports( )->list_open( ) INTO DATA(lv_trkorr).
@@ -283,10 +283,10 @@ CLASS ZCL_ABAPGIT_TRAN_TO_BRAN IMPLEMENTATION.
 
       IF is_relevant( iv_main    = io_repo->get_package( )
                       it_objects = lt_objects ) = abap_false.
-        io_log->add_info( |{ lv_trkorr } not relevant| ).
+        ii_log->add_info( |{ lv_trkorr } not relevant| ).
         CONTINUE.
       ELSE.
-        io_log->add_info( |{ lv_trkorr } relevant| ).
+        ii_log->add_info( |{ lv_trkorr } relevant| ).
       ENDIF.
 
       push( lv_trkorr ).

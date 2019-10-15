@@ -1,5 +1,5 @@
 
-CLASS lcl_helper DEFINITION FOR TESTING CREATE PRIVATE FINAL.
+CLASS ltcl_helper DEFINITION FOR TESTING CREATE PRIVATE FINAL.
 
   PUBLIC SECTION.
     TYPES: BEGIN OF ty_tadir,
@@ -39,7 +39,7 @@ CLASS lcl_helper DEFINITION FOR TESTING CREATE PRIVATE FINAL.
 
 ENDCLASS.
 
-CLASS lcl_helper IMPLEMENTATION.
+CLASS ltcl_helper IMPLEMENTATION.
 
   METHOD constructor.
     mv_package = iv_package.
@@ -50,12 +50,12 @@ CLASS lcl_helper IMPLEMENTATION.
     gt_packages = it_packages.
     gt_tadir    = it_tadir.
 
-    zcl_abapgit_injector=>set_tadir( NEW lcl_helper( ) ).
+    zcl_abapgit_injector=>set_tadir( NEW ltcl_helper( ) ).
 
     LOOP AT it_packages INTO DATA(ls_package).
       zcl_abapgit_injector=>set_sap_package(
         iv_package = ls_package-package
-        ii_sap_package = NEW lcl_helper( ls_package-package ) ).
+        ii_sap_package = NEW ltcl_helper( ls_package-package ) ).
     ENDLOOP.
 
   ENDMETHOD.
@@ -123,7 +123,7 @@ CLASS ltcl_is_relevant IMPLEMENTATION.
 
   METHOD nope.
 
-    lcl_helper=>inject( it_tadir = VALUE #( (
+    ltcl_helper=>inject( it_tadir = VALUE #( (
       object   = 'CLAS'
       obj_name = 'ZCL_FOOBAR'
       devclass = '$MAIN' ) ) ).
@@ -142,7 +142,7 @@ CLASS ltcl_is_relevant IMPLEMENTATION.
 
   METHOD sub.
 
-    lcl_helper=>inject(
+    ltcl_helper=>inject(
       it_tadir = VALUE #( (
         object   = 'CLAS'
         obj_name = 'ZCL_FOOBAR'
@@ -165,7 +165,7 @@ CLASS ltcl_is_relevant IMPLEMENTATION.
 
   METHOD outside.
 
-    lcl_helper=>inject( it_tadir = VALUE #( (
+    ltcl_helper=>inject( it_tadir = VALUE #( (
       object   = 'CLAS'
       obj_name = 'ZCL_FOOBAR'
       devclass = '$OTHER' ) ) ).
@@ -210,7 +210,7 @@ CLASS ltcl_build_stage IMPLEMENTATION.
 
   METHOD setup.
     mo_cut = NEW #( ).
-    mo_cut->mo_log = NEW zcl_abapgit_log( ).
+    mo_cut->mi_log = NEW zcl_abapgit_log( ).
 
     zcl_abapgit_injector=>set_stage_logic( me ).
     zcl_bg_injector=>set_transports( me ).
