@@ -240,9 +240,9 @@ CLASS ltcl_build_stage IMPLEMENTATION.
 
 * todo, ZCL_ABAPGIT_REPO should be changed to implement an interface
 
-*    DATA(lt_result) = mo_cut->build_stage( 'ABC123' ).
+* todo   DATA(lt_result) = mo_cut->build_stage( 'ABC123' ).
 *
-*    cl_abap_unit_assert=>assert_equals(
+* todo   cl_abap_unit_assert=>assert_equals(
 *      act = lines( lt_result )
 *      exp = 1  ).
 
