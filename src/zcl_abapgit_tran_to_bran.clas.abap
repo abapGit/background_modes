@@ -77,6 +77,7 @@ CLASS ZCL_ABAPGIT_TRAN_TO_BRAN IMPLEMENTATION.
 
   METHOD build_stage.
 
+
     DATA(ls_files) = zcl_abapgit_factory=>get_stage_logic( )->get( mo_repo ).
     DATA(lt_file_status) = zcl_abapgit_file_status=>status( mo_repo ).
 
