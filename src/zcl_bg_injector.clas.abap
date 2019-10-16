@@ -1,18 +1,18 @@
-class ZCL_BG_INJECTOR definition
-  public
-  create private
-  for testing .
+CLASS zcl_bg_injector DEFINITION
+  PUBLIC
+  CREATE PRIVATE
+  FOR TESTING .
 
-public section.
+  PUBLIC SECTION.
 
-  class-methods SET_OBJECTS
-    importing
-      !II_OBJECTS type ref to ZIF_BG_OBJECTS .
-  class-methods SET_TRANSPORTS
-    importing
-      !II_TRANSPORTS type ref to ZIF_BG_TRANSPORTS .
+    CLASS-METHODS set_objects
+      IMPORTING
+        !ii_objects TYPE REF TO zif_bg_objects .
+    CLASS-METHODS set_transports
+      IMPORTING
+        !ii_transports TYPE REF TO zif_bg_transports .
   PROTECTED SECTION.
-private section.
+  PRIVATE SECTION.
 ENDCLASS.
 
 

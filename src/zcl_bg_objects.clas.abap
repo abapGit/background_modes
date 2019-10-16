@@ -1,12 +1,12 @@
-class ZCL_BG_OBJECTS definition
-  public
-  create public .
+CLASS zcl_bg_objects DEFINITION
+  PUBLIC
+  CREATE PUBLIC .
 
-public section.
+  PUBLIC SECTION.
 
-  interfaces ZIF_BG_OBJECTS .
-protected section.
-private section.
+    INTERFACES zif_bg_objects .
+  PROTECTED SECTION.
+  PRIVATE SECTION.
 ENDCLASS.
 
 
