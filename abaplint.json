@@ -80,7 +80,7 @@
     "types_naming": true,
     "uncaught_exception": true,
     "unknown_types": true,
-    "unused_methods": true,
+    "unused_methods": false,
     "unused_types": true,
     "unused_variables": false,
     "use_bool_expression": true,
