@@ -146,7 +146,7 @@ CLASS ZCL_ABAPGIT_TRAN_TO_BRAN IMPLEMENTATION.
       mi_log->add_info( |Branch { iv_name } created| ).
     ENDIF.
 
-    mo_repo->set_branch_name( iv_name ).
+    mo_repo->select_branch( iv_name ).
 
   ENDMETHOD.
 
@@ -193,12 +193,12 @@ CLASS ZCL_ABAPGIT_TRAN_TO_BRAN IMPLEMENTATION.
 
   METHOD determine_user_details.
 
-    DATA: lo_user_master_record TYPE REF TO zcl_abapgit_user_master_record.
+    DATA: lo_user_record TYPE REF TO zcl_abapgit_user_record.
 
 
-    lo_user_master_record = zcl_abapgit_user_master_record=>get_instance( iv_changed_by ).
-    rs_user-name = lo_user_master_record->get_name( ).
-    rs_user-email = lo_user_master_record->get_email( ).
+    lo_user_record = zcl_abapgit_user_record=>get_instance( iv_changed_by ).
+    rs_user-name = lo_user_record->get_name( ).
+    rs_user-email = lo_user_record->get_email( ).
 
 *   If no email, fall back to localhost/default email
     IF rs_user-email IS INITIAL.
@@ -239,7 +239,7 @@ CLASS ZCL_ABAPGIT_TRAN_TO_BRAN IMPLEMENTATION.
 
   METHOD push.
 
-    DATA(lv_base_branch) = mo_repo->get_branch_name( ).
+    DATA(lv_base_branch) = mo_repo->get_selected_branch( ).
     create_or_set_branch( |refs/heads/{ iv_trkorr }| ).
 
     DATA(lt_stage) = build_stage( iv_trkorr ).
@@ -253,7 +253,7 @@ CLASS ZCL_ABAPGIT_TRAN_TO_BRAN IMPLEMENTATION.
                      io_stage   = ls_stage-stage ).
     ENDLOOP.
 
-    mo_repo->set_branch_name( lv_base_branch ).
+    mo_repo->select_branch( lv_base_branch ).
 
   ENDMETHOD.
 
