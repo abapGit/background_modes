@@ -72,7 +72,7 @@ ENDCLASS.
 
 
 
-CLASS ZCL_ABAPGIT_TRAN_TO_BRAN IMPLEMENTATION.
+CLASS zcl_abapgit_tran_to_bran IMPLEMENTATION.
 
 
   METHOD build_stage.
@@ -136,7 +136,8 @@ CLASS ZCL_ABAPGIT_TRAN_TO_BRAN IMPLEMENTATION.
 
   METHOD create_or_set_branch.
 
-    DATA(lt_branches) = zcl_abapgit_factory=>get_branch_overview( mo_repo )->get_branches( ).
+    DATA(lo_branches) = zcl_abapgit_git_transport=>branches( mo_repo->get_url( ) ).
+    DATA(lt_branches) = lo_branches->get_branches_only( ).
 
     IF NOT line_exists( lt_branches[ name = iv_name ] ).
       mo_repo->create_branch(
