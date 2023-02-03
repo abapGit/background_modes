@@ -8,12 +8,12 @@
   "dependencies": [
     {
       "url": "https://github.com/abaplint/deps",
-      "folder": "/deps",
+      "folder": "/deps1",
       "files": "/src/**/*.*"
     },
     {
       "url": "https://github.com/abapGit/abapGit",
-      "folder": "/git",
+      "folder": "/deps2",
       "files": "/src/**/*.*"
     }
   ],
@@ -33,7 +33,6 @@
     "check_comments": false,
     "check_ddic": true,
     "check_include": true,
-    "check_no_handler_pragma": true,
     "check_subrc": false,
     "check_text_elements": true,
     "class_attribute_names": true,
@@ -54,9 +53,8 @@
     "keep_single_parameter_on_one_line": true,
     "keyword_case": true,
     "line_break_multiple_parameters": true,
-    "line_break_style": true,
+    "line_break_style": false,
     "local_class_naming": true,
-    "many_parenthesis": true,
     "method_implemented_twice": true,
     "method_length": false,
     "method_overwrites_builtin": true,
@@ -93,12 +91,8 @@
     "ambiguous_statement": true,
     "avoid_use": {
       "define": true,
-      "endselect": true,
-      "execSQL": true,
-      "kernelCall": true,
-      "communication": true,
+      "testSeams": true,
       "statics": true,
-      "systemCall": true,
       "defaultKey": false,
       "break": true,
       "describeLines": true
@@ -125,7 +119,6 @@
     "inline_data_old_versions": true,
     "line_length": true,
     "line_only_punc": true,
-    "local_testclass_location": true,
     "local_variable_names": true,
     "main_file_contents": true,
     "max_one_statement": true,
