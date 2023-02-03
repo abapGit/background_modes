@@ -9,7 +9,7 @@ CLASS zcl_abapgit_tran_to_bran DEFINITION
 
     TYPES:
       BEGIN OF ty_stage,
-        comment TYPE zif_abapgit_definitions=>ty_comment,
+        comment TYPE zif_abapgit_git_definitions=>ty_comment,
         stage   TYPE REF TO zcl_abapgit_stage,
       END OF ty_stage .
     TYPES:
@@ -53,7 +53,7 @@ CLASS zcl_abapgit_tran_to_bran DEFINITION
       IMPORTING
         !iv_changed_by TYPE xubname
       RETURNING
-        VALUE(rs_user) TYPE zif_abapgit_definitions=>ty_git_user .
+        VALUE(rs_user) TYPE zif_abapgit_git_definitions=>ty_git_user .
     METHODS is_relevant
       IMPORTING
         !iv_main           TYPE devclass
@@ -84,7 +84,7 @@ CLASS zcl_abapgit_tran_to_bran IMPLEMENTATION.
     DATA(lt_changed) = determine_changed( iv_trkorr ).
 
     LOOP AT lt_changed INTO DATA(ls_changed).
-      DATA(ls_comment) = VALUE zif_abapgit_definitions=>ty_comment(
+      DATA(ls_comment) = VALUE zif_abapgit_git_definitions=>ty_comment(
         committer = determine_user_details( ls_changed-username )
         comment   = zcl_bg_factory=>get_transports( )->read_description( iv_trkorr ) ).
 
