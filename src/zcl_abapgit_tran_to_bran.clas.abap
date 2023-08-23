@@ -79,7 +79,7 @@ CLASS zcl_abapgit_tran_to_bran IMPLEMENTATION.
 
 
     DATA(ls_files) = zcl_abapgit_factory=>get_stage_logic( )->get( mo_repo ).
-    DATA(lt_file_status) = zcl_abapgit_file_status=>status( mo_repo ).
+    DATA(lt_file_status) = zcl_abapgit_repo_status=>calculate( mo_repo ).
 
     DATA(lt_changed) = determine_changed( iv_trkorr ).
 
@@ -157,7 +157,7 @@ CLASS zcl_abapgit_tran_to_bran IMPLEMENTATION.
     DATA(li_transports) = zcl_bg_factory=>get_transports( ).
     DATA(lv_transport_owner) = li_transports->read_owner( iv_trkorr ).
     DATA(lt_objects) = zcl_bg_factory=>get_objects( )->to_r3tr( li_transports->list_contents( iv_trkorr ) ).
-    DATA(lt_file_status) = zcl_abapgit_file_status=>status( mo_repo ).
+    DATA(lt_file_status) = zcl_abapgit_repo_status=>calculate( mo_repo ).
 
     LOOP AT lt_file_status ASSIGNING FIELD-SYMBOL(<ls_status>) WHERE obj_type IS NOT INITIAL.
       IF NOT line_exists( lt_objects[ object   = <ls_status>-obj_type
