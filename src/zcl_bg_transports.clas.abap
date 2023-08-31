@@ -11,7 +11,7 @@ ENDCLASS.
 
 
 
-CLASS ZCL_BG_TRANSPORTS IMPLEMENTATION.
+CLASS zcl_bg_transports IMPLEMENTATION.
 
 
   METHOD zif_bg_transports~list_contents.
@@ -60,8 +60,14 @@ CLASS ZCL_BG_TRANSPORTS IMPLEMENTATION.
     SELECT SINGLE as4text FROM e07t
       INTO rv_description
       WHERE trkorr = iv_trkorr AND langu = sy-langu.
-    IF sy-subrc <> 0.
-      RAISE EXCEPTION TYPE zcx_abapgit_exception.
+    IF sy-subrc <> 0. " If language does not exist try to find another description.
+      SELECT SINGLE as4text FROM e07t
+           INTO rv_description
+           WHERE trkorr = iv_trkorr.
+      IF sy-subrc <> 0.
+        RAISE EXCEPTION TYPE zcx_abapgit_desc_exception.
+      ENDIF.
+
     ENDIF.
 
   ENDMETHOD.
@@ -72,7 +78,7 @@ CLASS ZCL_BG_TRANSPORTS IMPLEMENTATION.
       FROM e070
       WHERE trkorr = @iv_trkorr.
     IF sy-subrc <> 0.
-      RAISE EXCEPTION TYPE zcx_abapgit_exception.
+      RAISE EXCEPTION TYPE zcx_abapgit_user_exception.
     ENDIF.
   ENDMETHOD.
 ENDCLASS.
