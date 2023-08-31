@@ -25,7 +25,7 @@ ENDCLASS.
 CLASS zcx_abapgit_desc_exception IMPLEMENTATION.
 
 
-  METHOD constructor ##ADT_SUPPRESS_GENERATION.
+  METHOD constructor.
     CALL METHOD super->constructor
       EXPORTING
         previous = previous
