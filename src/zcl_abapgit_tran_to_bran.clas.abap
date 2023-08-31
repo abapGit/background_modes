@@ -279,7 +279,6 @@ CLASS zcl_abapgit_tran_to_bran IMPLEMENTATION.
     mo_repo = io_repo.
 
     LOOP AT zcl_bg_factory=>get_transports( )->list_open( ) INTO DATA(lv_trkorr).
-
       DATA(lt_objects) = zcl_bg_factory=>get_objects( )->to_r3tr(
         zcl_bg_factory=>get_transports( )->list_contents( lv_trkorr ) ).
 

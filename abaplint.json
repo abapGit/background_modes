@@ -132,7 +132,7 @@
     "parser_error": true,
     "preferred_compare_operator": true,
     "release_idoc": true,
-    "remove_descriptions": true,
+    "remove_descriptions": false,
     "rfc_error_handling": true,
     "sequential_blank": true,
     "short_case": true,
