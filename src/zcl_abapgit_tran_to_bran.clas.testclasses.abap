@@ -212,7 +212,7 @@ CLASS ltcl_build_stage IMPLEMENTATION.
     mo_cut = NEW #( ).
     mo_cut->mi_log = NEW zcl_abapgit_log( ).
 
-    zcl_abapgit_injector=>set_stage_logic( me ).
+    zcl_abapgit_stage_logic=>set_stage_logic( me ).
     zcl_bg_injector=>set_transports( me ).
   ENDMETHOD.
 
