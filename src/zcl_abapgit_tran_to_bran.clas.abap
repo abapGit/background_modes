@@ -276,14 +276,14 @@ CLASS zcl_abapgit_tran_to_bran IMPLEMENTATION.
   METHOD zif_abapgit_background~run.
 
     mi_log  = ii_log.
-    mo_repo = io_repo.
+    mo_repo ?= ii_repo_online.
 
     LOOP AT zcl_bg_factory=>get_transports( )->list_open( ) INTO DATA(lv_trkorr).
 
       DATA(lt_objects) = zcl_bg_factory=>get_objects( )->to_r3tr(
         zcl_bg_factory=>get_transports( )->list_contents( lv_trkorr ) ).
 
-      IF is_relevant( iv_main    = io_repo->get_package( )
+      IF is_relevant( iv_main    = mo_repo->get_package( )
                       it_objects = lt_objects ) = abap_false.
         ii_log->add_info( |{ lv_trkorr } not relevant| ).
         CONTINUE.

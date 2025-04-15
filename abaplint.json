@@ -93,6 +93,8 @@
       "define": true,
       "testSeams": true,
       "statics": true,
+      "exportToMemory": true,
+      "exportToDatabase": true,
       "defaultKey": false,
       "break": true,
       "describeLines": true
